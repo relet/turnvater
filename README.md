@@ -7,19 +7,37 @@ If at least four participants are in each group, the first two winners advance, 
 
 It supports i18n in de and en
 
+## setup
+
+Create a JSON file ".settings" with the following values:
+
+``` application/json
+{
+	"token"   : "...",
+	"appId"   : "...",
+	"guildId" : "...",
+	"state"   : "./state.sqlite3"
+}
+```
+
+The bot will use token, appId and guildId to log onto discord. 
+The last option is the sqlite3 save file for the tournament data.
+
 ## slash commands
 
 ### /turn-reset
 
 (Admin permissions required)
 
-Starts a new tournament with a given name.
+Starts a new tournament with a given name. All other settings will be erased.
 
 ### /turn-register
 
 Registers a particpant with a nickname
 
 ### /turn-start
+
+(Admin permissions required)
 
 Starts the tournament with the following settings
 
