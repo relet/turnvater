@@ -9,17 +9,17 @@ It supports i18n in de and en
 
 ## slash commands
 
-# /turn-reset
+### /turn-reset
 
 (Admin permissions required)
 
 Starts a new tournament with a given name.
 
-# /turn-register
+### /turn-register
 
 Registers a particpant with a nickname
 
-# /turn-start
+### /turn-start
 
 Starts the tournament with the following settings
 
@@ -27,10 +27,10 @@ Starts the tournament with the following settings
 * Bestof: Scores have to add up to this number in the qualifications
 * Bestof-finals: Scores have to add up to this number in the other rounds.
 
-# /turn-status
+### /turn-status
 
 Prints a summary of where we're at
 
-# /turn-result
+### /turn-result
 
 Allows to register a result. Accepts to player names, and two scores. 
