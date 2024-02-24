@@ -63,18 +63,17 @@ func TurnStatusHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
 		for i := 2; i <= 6; i++ {
 			groups, rest := CalcGroups(num, i)
 			if groups > 1 {
-				message += fmt.Sprintf(i18n[lang]["info-grouping"], i, groups, rest) + ":"
 				if groups&(groups-1) != 0 {
 					reduced := 1
 					for reduced < groups {
 						reduced *= 2
 					}
 					reduced /= 2
-					message += " " + fmt.Sprintf(i18n[lang]["fail-power"], reduced) + "\n"
-				} else if rest > 0 {
-					message += " " + i18n[lang]["fail-rest"] + "\n"
-				} else {
-					message += " " + i18n[lang]["grouping-ok"] + "\n"
+					rest += (groups - reduced) * i
+					groups = reduced
+				}
+				if rest < groups {
+					message += fmt.Sprintf(i18n[lang]["info-grouping"], i, groups, rest) + ".\n"
 				}
 			}
 		}

@@ -58,7 +58,6 @@ func (bot *TurnvaterBot) ReRegisterCommands() error {
 		fmt.Printf("Logged in as: %v#%v\n", s.State.User.Username, s.State.User.Discriminator)
 	})
 	dg.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		fmt.Println("Interaction", i.Type)
 		if i.Type == discordgo.InteractionApplicationCommand {
 			if handler, ok := commands[i.ApplicationCommandData().Name]; ok {
 				handler(s, i)
