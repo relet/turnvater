@@ -28,12 +28,17 @@ func TurnRegisterHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) 
 	// check if registration is open
 	status := DBGetTournamentStatus(backend)
 	if status != "status-open" {
-		Respond(dg, i, i18n[lang]["err-register-started"])
+		Respond(dg, i, i18n[lang]["err-started"])
 		return
 	}
 
 	// get discord handle, name and IGN parameter
 	ign := i.ApplicationCommandData().Options[0].StringValue()
+	// if ign begins with ! reject
+	if ign[0] == '!' {
+		Respond(dg, i, i18n[lang]["err-register-name"])
+		return
+	}
 
 	err := DBRegisterParticipant(backend, i.Member.User.ID, ign)
 	if err != nil {
@@ -197,7 +202,11 @@ func TurnGamesHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
 	for _, group := range groups {
 		message := "*" + fmt.Sprintf(i18n[lang]["summary-group"], group.Name) + "*\n"
 		for _, match := range group.Matches {
-			message += fmt.Sprintf(i18n[lang]["summary-match"], match.Player1, match.Player2, match.Score1, match.Score2) + "\n"
+			p1 := match.Player1
+			p2 := match.Player2
+			if p1[0] != '!' && p2[0] != '!' {
+				message += fmt.Sprintf(i18n[lang]["summary-match"], match.Player1, match.Player2, match.Score1, match.Score2) + "\n"
+			}
 		}
 		message += "\n"
 	}
