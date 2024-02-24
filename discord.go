@@ -33,7 +33,7 @@ func GenChoices(choices []string) []*discordgo.ApplicationCommandOptionChoice {
 	return result
 }
 
-func RunBot(token string, appId string, guildId string, participants []string) (TurnvaterBot, error) {
+func NewBot(token string, appId string, guildId string, participants []string) TurnvaterBot {
 	bot := TurnvaterBot{
 		Token:        token,
 		AppId:        appId,
@@ -42,13 +42,7 @@ func RunBot(token string, appId string, guildId string, participants []string) (
 		Restart:      false,
 	}
 
-	err := bot.ReRegisterCommands()
-	if err != nil {
-		fmt.Println("error registering commands", err)
-		return bot, err
-	}
-
-	return bot, nil
+	return bot
 }
 
 func (bot *TurnvaterBot) ReRegisterCommands() error {
@@ -62,9 +56,12 @@ func (bot *TurnvaterBot) ReRegisterCommands() error {
 		fmt.Printf("Logged in as: %v#%v\n", s.State.User.Username, s.State.User.Discriminator)
 	})
 	dg.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		fmt.Println("Interaction", i.Type)
 		if i.Type == discordgo.InteractionApplicationCommand {
 			if handler, ok := commands[i.ApplicationCommandData().Name]; ok {
 				handler(s, i)
+			} else {
+				fmt.Println("Unknown command", i.ApplicationCommandData().Name)
 			}
 		}
 	})
@@ -77,6 +74,7 @@ func (bot *TurnvaterBot) ReRegisterCommands() error {
 
 	// Register slash commands and their handlers
 	// /turn-reset
+
 	_, err = dg.ApplicationCommandCreate(bot.AppId, bot.GuildId, &discordgo.ApplicationCommand{
 		Name:                     "turn-reset",
 		Description:              i18n[lang]["turn-reset"],
@@ -194,6 +192,8 @@ func (bot *TurnvaterBot) ReRegisterCommands() error {
 	if err != nil {
 		return fmt.Errorf("error creating command: %w", err)
 	}
+
+	fmt.Println("Commands registered.")
 
 	return nil
 }

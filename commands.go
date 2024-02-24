@@ -9,6 +9,7 @@ import (
 
 func TurnResetHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Check if the user has the correct permissions
+
 	if !HasPermission(dg, i.Member, i.GuildID, "ADMINISTRATOR") {
 		Respond(dg, i, i18n[lang]["err-not-allowed"])
 		return
@@ -64,7 +65,8 @@ func TurnStatusHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
 			if groups > 1 {
 				message += fmt.Sprintf(i18n[lang]["info-grouping"], i, groups, rest) + ":"
 				if groups&(groups-1) != 0 {
-					message += " " + i18n[lang]["fail-even-groups"] + "\n"
+					reduced := groups - (groups & (groups - 1))
+					message += " " + fmt.Sprintf(i18n[lang]["fail-power"], reduced) + "\n"
 				} else if rest > 0 {
 					message += " " + i18n[lang]["fail-rest"] + "\n"
 				} else {
