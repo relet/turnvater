@@ -127,7 +127,7 @@ func TurnStartHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
 func TurnResultHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
 	status := DBGetTournamentStatus(backend)
 	if status != "status-started" {
-		Respond(dg, i, i18n[lang]["err-not-allowed"])
+		Respond(dg, i, i18n[lang]["err-not-started"])
 		return
 	}
 	p1 := i.ApplicationCommandData().Options[0].StringValue()
@@ -180,6 +180,26 @@ func TurnResultHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
 			second := winners[1]
 			message += "\n" + fmt.Sprintf(i18n[lang]["ok-group-second"], second.Player, group.Name, second.Group.Name)
 		}
+	}
+	Respond(dg, i, message)
+}
+
+func TurnGamesHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
+	// check if the tournament is running
+	status := DBGetTournamentStatus(backend)
+	if status != "status-started" {
+		Respond(dg, i, i18n[lang]["err-not-started"])
+		return
+	}
+	// display all games ordered by group
+	groups := DBGetAllGames(backend)
+	var message string
+	for _, group := range groups {
+		message := "*" + fmt.Sprintf(i18n[lang]["summary-group"], group.Name) + "*\n"
+		for _, match := range group.Matches {
+			message += fmt.Sprintf(i18n[lang]["summary-match"], match.Player1, match.Player2, match.Score1, match.Score2) + "\n"
+		}
+		message += "\n"
 	}
 	Respond(dg, i, message)
 }

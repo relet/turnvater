@@ -155,7 +155,7 @@ func TestTournament(t *testing.T) {
 	}
 
 	DBCreateMatch(db, groups[0].Participants[0], groups[0].Participants[1], 3, 2)
-	advance, err = DBCheckGroupComplete(db, groups[0].Id)
+	advance, _ = DBCheckGroupComplete(db, groups[0].Id)
 
 	if len(advance) != 1 {
 		t.Errorf("Expected 1 winner, got %d", len(advance))

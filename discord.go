@@ -20,6 +20,7 @@ var commands = map[string]func(*discordgo.Session, *discordgo.InteractionCreate)
 	"turn-status":   TurnStatusHandler,
 	"turn-start":    TurnStartHandler,
 	"turn-result":   TurnResultHandler,
+	"turn-games":    TurnGamesHandler,
 }
 
 func GenChoices(choices []string) []*discordgo.ApplicationCommandOptionChoice {
@@ -189,6 +190,16 @@ func (bot *TurnvaterBot) ReRegisterCommands() error {
 				Required:    true,
 			},
 		},
+	})
+	if err != nil {
+		return fmt.Errorf("error creating command: %w", err)
+	}
+
+	// /turn-games
+	_, err = dg.ApplicationCommandCreate(bot.AppId, bot.GuildId, &discordgo.ApplicationCommand{
+		Name:         "turn-games",
+		Description:  i18n[lang]["turn-games"],
+		DMPermission: &allow,
 	})
 	if err != nil {
 		return fmt.Errorf("error creating command: %w", err)
