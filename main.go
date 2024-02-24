@@ -111,9 +111,8 @@ func main() {
 
 	participants := DBGetParticipants(backend, 0)
 
-	bot := NewBot(token, appId, guildId, participants)
+	bot, err := NewBot(token, appId, guildId, participants)
 
-	err = bot.ReRegisterCommands()
 	if err != nil {
 		fmt.Println("error running bot", err)
 		return

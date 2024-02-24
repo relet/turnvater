@@ -149,7 +149,11 @@ func DBStartTournament(db *sql.DB, groupsize, bestof, finals int64) error {
 	numGroups := len(participants) / int(groupsize)
 	// reduce number of groups to 2^x
 	if numGroups&(numGroups-1) != 0 {
-		numGroups -= numGroups & (numGroups - 1)
+		reduced := 1
+		for reduced < numGroups {
+			reduced *= 2
+		}
+		numGroups = reduced / 2
 	}
 
 	// shuffle

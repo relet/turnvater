@@ -33,7 +33,7 @@ func GenChoices(choices []string) []*discordgo.ApplicationCommandOptionChoice {
 	return result
 }
 
-func NewBot(token string, appId string, guildId string, participants []string) TurnvaterBot {
+func NewBot(token string, appId string, guildId string, participants []string) (TurnvaterBot, error) {
 	bot := TurnvaterBot{
 		Token:        token,
 		AppId:        appId,
@@ -42,7 +42,9 @@ func NewBot(token string, appId string, guildId string, participants []string) T
 		Restart:      false,
 	}
 
-	return bot
+	err := bot.ReRegisterCommands()
+
+	return bot, err
 }
 
 func (bot *TurnvaterBot) ReRegisterCommands() error {
@@ -50,7 +52,7 @@ func (bot *TurnvaterBot) ReRegisterCommands() error {
 	if err != nil {
 		return fmt.Errorf("error creating discord session: %w", err)
 	}
-	defer dg.Close()
+	//defer dg.Close()
 
 	dg.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 		fmt.Printf("Logged in as: %v#%v\n", s.State.User.Username, s.State.User.Discriminator)
