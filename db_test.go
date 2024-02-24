@@ -35,14 +35,14 @@ func TestTournament(t *testing.T) {
 	}
 
 	//register 17 participants
-	for i := 0; i < 17; i++ {
+	for i := 0; i < 21; i++ {
 		DBRegisterParticipant(db, fmt.Sprintf("user%d", i), fmt.Sprintf("ign%d", i))
 	}
 
 	// check if 17 participants are registered
 	participants := DBGetParticipants(db, 0)
-	if len(participants) != 17 {
-		t.Errorf("Expected 17 participants, got %d", len(participants))
+	if len(participants) != 21 {
+		t.Errorf("Expected 21 participants, got %d", len(participants))
 	}
 
 	// start the tournament with group size 4
@@ -54,7 +54,7 @@ func TestTournament(t *testing.T) {
 		t.Errorf("Expected status-started, got %s", status)
 	}
 
-	// check if the tournament has 4 active groups
+	// check if the tournament has 4 active groups, this tests group count reduction to 2^x
 	groups := DBGetGroups(db)
 	if len(groups) != 4 {
 		t.Errorf("Expected 4 groups, got %d", len(groups))
