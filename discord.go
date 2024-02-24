@@ -6,6 +6,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+type TurnvaterBot struct {
+	Token        string
+	AppId        string
+	GuildId      string
+	Participants []string
+	Restart      bool
+}
+
 var commands = map[string]func(*discordgo.Session, *discordgo.InteractionCreate){
 	"turn-reset":    TurnResetHandler,
 	"turn-register": TurnRegisterHandler,
@@ -25,11 +33,28 @@ func GenChoices(choices []string) []*discordgo.ApplicationCommandOptionChoice {
 	return result
 }
 
-func RunBot(token string, appId string, guildId string, participants []string) {
-	dg, err := discordgo.New("Bot " + token)
+func RunBot(token string, appId string, guildId string, participants []string) (TurnvaterBot, error) {
+	bot := TurnvaterBot{
+		Token:        token,
+		AppId:        appId,
+		GuildId:      guildId,
+		Participants: participants,
+		Restart:      false,
+	}
+
+	err := bot.ReRegisterCommands()
 	if err != nil {
-		fmt.Println("error creating Discord session", err)
-		return
+		fmt.Println("error registering commands", err)
+		return bot, err
+	}
+
+	return bot, nil
+}
+
+func (bot *TurnvaterBot) ReRegisterCommands() error {
+	dg, err := discordgo.New("Bot " + bot.Token)
+	if err != nil {
+		return fmt.Errorf("error creating discord session: %w", err)
 	}
 	defer dg.Close()
 
@@ -47,13 +72,12 @@ func RunBot(token string, appId string, guildId string, participants []string) {
 	// wait until ready
 	err = dg.Open()
 	if err != nil {
-		fmt.Println("error opening connection", err)
-		return
+		return fmt.Errorf("error opening discord connection: %w", err)
 	}
 
 	// Register slash commands and their handlers
 	// /turn-reset
-	_, err = dg.ApplicationCommandCreate(appId, guildId, &discordgo.ApplicationCommand{
+	_, err = dg.ApplicationCommandCreate(bot.AppId, bot.GuildId, &discordgo.ApplicationCommand{
 		Name:                     "turn-reset",
 		Description:              i18n[lang]["turn-reset"],
 		DefaultMemberPermissions: &permAdmin,
@@ -68,11 +92,11 @@ func RunBot(token string, appId string, guildId string, participants []string) {
 		},
 	})
 	if err != nil {
-		fmt.Println("error creating command:", err)
+		return fmt.Errorf("error creating command: %w", err)
 	}
 
 	// /turn-register
-	_, err = dg.ApplicationCommandCreate(appId, guildId, &discordgo.ApplicationCommand{
+	_, err = dg.ApplicationCommandCreate(bot.AppId, bot.GuildId, &discordgo.ApplicationCommand{
 		Name:         "turn-register",
 		Description:  i18n[lang]["turn-register"],
 		DMPermission: &deny,
@@ -86,21 +110,21 @@ func RunBot(token string, appId string, guildId string, participants []string) {
 		},
 	})
 	if err != nil {
-		fmt.Println("error creating command:", err)
+		return fmt.Errorf("error creating command: %w", err)
 	}
 
 	// /turn-status
-	_, err = dg.ApplicationCommandCreate(appId, guildId, &discordgo.ApplicationCommand{
+	_, err = dg.ApplicationCommandCreate(bot.AppId, bot.GuildId, &discordgo.ApplicationCommand{
 		Name:         "turn-status",
 		Description:  i18n[lang]["turn-status"],
 		DMPermission: &allow,
 	})
 	if err != nil {
-		fmt.Println("error creating command:", err)
+		return fmt.Errorf("error creating command: %w", err)
 	}
 
 	// /turn-start
-	_, err = dg.ApplicationCommandCreate(appId, guildId, &discordgo.ApplicationCommand{
+	_, err = dg.ApplicationCommandCreate(bot.AppId, bot.GuildId, &discordgo.ApplicationCommand{
 		Name:                     "turn-start",
 		Description:              i18n[lang]["turn-start"],
 		DMPermission:             &allow,
@@ -130,11 +154,11 @@ func RunBot(token string, appId string, guildId string, participants []string) {
 		},
 	})
 	if err != nil {
-		fmt.Println("error creating command:", err)
+		return fmt.Errorf("error creating command: %w", err)
 	}
 
 	// /turn-result
-	_, err = dg.ApplicationCommandCreate(appId, guildId, &discordgo.ApplicationCommand{
+	_, err = dg.ApplicationCommandCreate(bot.AppId, bot.GuildId, &discordgo.ApplicationCommand{
 		Name:         "turn-result",
 		Description:  i18n[lang]["turn-result"],
 		DMPermission: &deny,
@@ -144,7 +168,7 @@ func RunBot(token string, appId string, guildId string, participants []string) {
 				Name:        "p1",
 				Description: i18n[lang]["opt-p1"],
 				Required:    true,
-				Choices:     GenChoices(participants),
+				Choices:     GenChoices(bot.Participants),
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionInteger,
@@ -157,7 +181,7 @@ func RunBot(token string, appId string, guildId string, participants []string) {
 				Name:        "p2",
 				Description: i18n[lang]["opt-p2"],
 				Required:    true,
-				Choices:     GenChoices(participants),
+				Choices:     GenChoices(bot.Participants),
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionInteger,
@@ -168,10 +192,19 @@ func RunBot(token string, appId string, guildId string, participants []string) {
 		},
 	})
 	if err != nil {
-		fmt.Println("error creating command:", err)
+		return fmt.Errorf("error creating command: %w", err)
 	}
 
+	return nil
+}
+
+func (bot *TurnvaterBot) Run() {
 	// Wait here until CTRL-C or other term signal is received.
 	fmt.Println("Bot is now running. Press CTRL-C to exit.")
-	select {}
+	for {
+		if bot.Restart {
+			bot.Restart = false
+			bot.ReRegisterCommands()
+		}
+	}
 }

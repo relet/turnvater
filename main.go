@@ -17,6 +17,7 @@ var (
 	deny  = false
 
 	backend   *sql.DB
+	turnvater *TurnvaterBot
 	permAdmin int64 = discordgo.PermissionAdministrator
 
 	lang = "de"
@@ -51,6 +52,11 @@ func CalcGroups(num, groupsize int) (int, int) {
 }
 
 /* === Main Loop === */
+
+func ReRegister() {
+	turnvater.Participants = DBGetParticipants(backend, 0)
+	turnvater.Restart = true
+}
 
 func main() {
 	// read lang from environment or command line
@@ -104,6 +110,11 @@ func main() {
 	backend = db
 
 	participants := DBGetParticipants(backend, 0)
+	bot, err := RunBot(token, appId, guildId, participants)
+	if err != nil {
+		fmt.Println("error running bot", err)
+		return
+	}
 
-	RunBot(token, appId, guildId, participants)
+	bot.Run()
 }
