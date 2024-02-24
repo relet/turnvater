@@ -21,3 +21,4 @@
 go.work
 
 .settings
+state.sqlite3

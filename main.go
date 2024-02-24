@@ -103,5 +103,7 @@ func main() {
 
 	backend = db
 
-	RunBot(token, appId, guildId)
+	participants := DBGetParticipants(backend, 0)
+
+	RunBot(token, appId, guildId, participants)
 }

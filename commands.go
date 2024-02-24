@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -115,6 +116,9 @@ func TurnStartHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	Respond(dg, i, fmt.Sprintf(i18n[lang]["ok-start"], groupsize))
+
+	// exit the application to reset the bot, and re-register commands
+	os.Exit(0)
 }
 
 func TurnResultHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {

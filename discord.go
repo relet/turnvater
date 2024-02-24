@@ -14,7 +14,18 @@ var commands = map[string]func(*discordgo.Session, *discordgo.InteractionCreate)
 	"turn-result":   TurnResultHandler,
 }
 
-func RunBot(token string, appId string, guildId string) {
+func GenChoices(choices []string) []*discordgo.ApplicationCommandOptionChoice {
+	var result []*discordgo.ApplicationCommandOptionChoice
+	for _, choice := range choices {
+		result = append(result, &discordgo.ApplicationCommandOptionChoice{
+			Name:  choice,
+			Value: choice,
+		})
+	}
+	return result
+}
+
+func RunBot(token string, appId string, guildId string, participants []string) {
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		fmt.Println("error creating Discord session", err)
@@ -100,18 +111,21 @@ func RunBot(token string, appId string, guildId string) {
 				Name:        "groupsize",
 				Description: i18n[lang]["opt-groupsize"],
 				Required:    true,
+				Choices:     GenChoices([]string{"2", "3", "4", "5", "6"}),
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionInteger,
 				Name:        "bestof",
 				Description: i18n[lang]["opt-bestof"],
 				Required:    true,
+				Choices:     GenChoices([]string{"1", "3", "5", "7", "9"}),
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionInteger,
 				Name:        "finals-bestof",
 				Description: i18n[lang]["opt-finals-bestof"],
 				Required:    true,
+				Choices:     GenChoices([]string{"1", "3", "5", "7", "9"}),
 			},
 		},
 	})
@@ -130,6 +144,7 @@ func RunBot(token string, appId string, guildId string) {
 				Name:        "p1",
 				Description: i18n[lang]["opt-p1"],
 				Required:    true,
+				Choices:     GenChoices(participants),
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionInteger,
@@ -142,6 +157,7 @@ func RunBot(token string, appId string, guildId string) {
 				Name:        "p2",
 				Description: i18n[lang]["opt-p2"],
 				Required:    true,
+				Choices:     GenChoices(participants),
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionInteger,
