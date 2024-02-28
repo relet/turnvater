@@ -85,7 +85,7 @@ func TurnStatusHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
 	} else if status == "status-started" {
 		// show grouping info
 		groups := DBGetGroups(backend)
-		for _, g := range groups { 
+		for _, g := range groups {
 			message += fmt.Sprintf("%s: %s\n", g.Name, strings.Join(g.Participants, ", "))
 			//print matches
 			matches := DBGetMatches(backend, g.Id)
@@ -197,18 +197,26 @@ func TurnGamesHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	// display all games ordered by group
-	groups := DBGetAllGames(backend)
-	var message string
+	groups, err := DBGetAllGames(backend)
+	if err != nil {
+		Respond(dg, i, i18n[lang]["err-get-games"]+" "+err.Error())
+		return
+	}
+	var message = "*" + i18n[lang]["summary-games"] + "*\n\n"
 	for _, group := range groups {
-		message := "*" + fmt.Sprintf(i18n[lang]["summary-group"], group.Name) + "*\n"
+		header := "*" + fmt.Sprintf(i18n[lang]["summary-group"], group.Name) + "*\n"
+		var items string
 		for _, match := range group.Matches {
 			p1 := match.Player1
 			p2 := match.Player2
 			if p1[0] != '!' && p2[0] != '!' {
-				message += fmt.Sprintf(i18n[lang]["summary-match"], match.Player1, match.Player2, match.Score1, match.Score2) + "\n"
+				items += fmt.Sprintf(i18n[lang]["summary-match"], match.Player1, match.Score1, match.Score2, match.Player2) + "\n"
 			}
 		}
-		message += "\n"
+		if items != "" {
+			message += header + items + "\n"
+		}
 	}
+	fmt.Println(message)
 	Respond(dg, i, message)
 }

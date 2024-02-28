@@ -276,10 +276,10 @@ func DBGetGroups(db *sql.DB) []Group {
 	return result
 }
 
-func DBGetAllGames(db *sql.DB) []Group {
+func DBGetAllGames(db *sql.DB) ([]Group, error) {
 	rows, err := db.Query("SELECT g.id, g.name, m.player1, m.player2, m.score1, m.score2 FROM matches m LEFT JOIN groups g ON m.group_id = g.id WHERE g.complete = 0 ORDER BY g.id, m.player1, m.player2")
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 	var groups []Group
@@ -288,12 +288,15 @@ func DBGetAllGames(db *sql.DB) []Group {
 		var m Match
 		err = rows.Scan(&g.Id, &g.Name, &m.Player1, &m.Player2, &m.Score1, &m.Score2)
 		if err != nil {
-			return nil
+			return nil, err
 		}
-		g.Matches = append(g.Matches, m)
-		groups = append(groups, g)
+		// if the last id is different, add the group to the list
+		if len(groups) == 0 || groups[len(groups)-1].Id != g.Id {
+			groups = append(groups, g)
+		}
+		groups[len(groups)-1].Matches = append(groups[len(groups)-1].Matches, m)
 	}
-	return groups
+	return groups, nil
 }
 
 func DBGetGroupAndBestOf(db *sql.DB, p1, p2 string) (Group, int) {

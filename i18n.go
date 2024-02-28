@@ -22,6 +22,7 @@ var i18n = map[string]map[string]string{
 		"err-no-match":       "Paarung nicht gefunden.",
 		"err-score-total":    "Die Summe der Punkte ist nicht korrekt. Wir spielen Best of %d.",
 		"err-set-score":      "Fehler beim Setzen des Ergebnisses.",
+		"err-get-games":      "Fehler beim Abrufen der Spiele.",
 		"ok-set-score":       "Ergebnis wurde gespeichert.",
 		"ok-reset":           "Neues Turnier '%s' wurde initialisiert.",
 		"err-start":          "Fehler beim Starten des Turniers.",
@@ -51,6 +52,7 @@ var i18n = map[string]map[string]string{
 		"congratulate":       "Herzlichen Glückwunsch, %s! Du bist Turniersieger!",
 		"summary-group":      "%s:",
 		"summary-match":      "    %s: %d - %d: %s",
+		"summary-games":      "Offene Spiele:",
 	},
 	"en": {
 		"turn-reset":         "Reset tournament",
@@ -73,6 +75,7 @@ var i18n = map[string]map[string]string{
 		"err-no-match":       "Match not found.",
 		"err-score-total":    "The sum of the scores is not correct. We play Best of %d.",
 		"err-set-score":      "Error setting the score.",
+		"err-get-games":      "Error getting the games.",
 		"ok-set-score":       "Score has been saved.",
 		"ok-reset":           "New tournament '%s' has been initialized.",
 		"err-start":          "Error starting the tournament.",
@@ -102,5 +105,6 @@ var i18n = map[string]map[string]string{
 		"congratulate":       "Congratulations, %s! You are the tournament winner!",
 		"summary-group":      "%s:",
 		"summary-match":      "    %s: %d - %d: %s",
+		"summary-games":      "Open games:",
 	},
 }
