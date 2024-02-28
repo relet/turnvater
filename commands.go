@@ -85,7 +85,7 @@ func TurnStatusHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
 	} else if status == "status-started" {
 		// show grouping info
 		groups := DBGetGroups(backend)
-		for _, g := range groups {
+		for _, g := range groups { 
 			message += fmt.Sprintf("%s: %s\n", g.Name, strings.Join(g.Participants, ", "))
 			//print matches
 			matches := DBGetMatches(backend, g.Id)

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"math/rand"
+	"sort"
 )
 
 type Match struct {
@@ -265,9 +266,13 @@ func DBGetGroups(db *sql.DB) []Group {
 		groups[id].Participants = append(groups[id].Participants, ign)
 	}
 	var result []Group
+	// sorted by name
 	for _, g := range groups {
 		result = append(result, *g)
 	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Name < result[j].Name
+	})
 	return result
 }
 
