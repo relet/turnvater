@@ -9,7 +9,7 @@ import (
 	"os"
 
 	"github.com/bwmarrin/discordgo"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 var (
@@ -99,8 +99,7 @@ func main() {
 		return
 	}
 
-	// open the state sqlite3 database
-	db, err := sql.Open("sqlite3", state)
+	db, err := sql.Open("sqlite", state)
 	if err != nil {
 		fmt.Println("error opening database", err)
 		return

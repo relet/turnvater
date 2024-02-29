@@ -9,7 +9,7 @@ import (
 )
 
 func InitDB() *sql.DB {
-	db, err := sql.Open("sqlite3", "testing.sqlite3")
+	db, err := sql.Open("sqlite", "testing.sqlite3")
 	if err != nil {
 		fmt.Println("error opening database", err)
 		return nil
