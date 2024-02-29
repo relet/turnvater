@@ -152,7 +152,7 @@ func TurnResultHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	// check if the scores add up to the best-of value
-	if int(score1+score2) != bestof {
+	if int(score1+score2) > bestof {
 		Respond(dg, i, fmt.Sprintf(i18n[lang]["err-score-total"], bestof))
 		return
 	}
