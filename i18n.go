@@ -52,7 +52,7 @@ var i18n = map[string]map[string]string{
 		"congratulate":       "Herzlichen Glückwunsch, %s! Du bist Turniersieger!",
 		"summary-group":      "%s:",
 		"summary-match":      "    %s: %d - %d: %s",
-		"summary-games":      "Offene Spiele:",
+		"summary-games":      "Alle Spiele in offenen Gruppen:",
 	},
 	"en": {
 		"turn-reset":         "Reset tournament",
@@ -105,6 +105,6 @@ var i18n = map[string]map[string]string{
 		"congratulate":       "Congratulations, %s! You are the tournament winner!",
 		"summary-group":      "%s:",
 		"summary-match":      "    %s: %d - %d: %s",
-		"summary-games":      "Open games:",
+		"summary-games":      "All games in open groups:",
 	},
 }
