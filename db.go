@@ -368,9 +368,13 @@ func DBGetScores(db *sql.DB, groupId int) (map[string]Score, error) {
 		if s1 > s2 {
 			scores[p1] = Score{Wins: scores[p1].Wins + 1, Points: scores[p1].Points + s1}
 			scores[p2] = Score{Wins: scores[p2].Wins, Points: scores[p2].Points + s2}
-		} else {
+		} else if s2 > s1 {
 			scores[p1] = Score{Wins: scores[p1].Wins, Points: scores[p1].Points + s1}
 			scores[p2] = Score{Wins: scores[p2].Wins + 1, Points: scores[p2].Points + s2}
+		} else {
+			scores[p1] = Score{Wins: scores[p1].Wins, Points: scores[p1].Points + s1}
+			scores[p2] = Score{Wins: scores[p2].Wins, Points: scores[p2].Points + s2}
+
 		}
 	}
 	return scores, nil
@@ -410,6 +414,7 @@ func DBCalcWinner(db *sql.DB, groupId int) (string, string, error) {
 			winner = p
 		}
 	}
+
 	// if there is no winner, identify by points
 	if count != 1 {
 		count = 0
@@ -528,6 +533,7 @@ func DBCheckGroupComplete(db *sql.DB, groupId int) ([]Advance, error) {
 	}
 
 	winner, second, err := DBCalcWinner(db, groupId)
+	fmt.Println("winner", winner, "second", second, "...")
 	if err != nil {
 		return nil, err
 	}
