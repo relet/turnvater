@@ -381,6 +381,84 @@ type Advance struct {
 	Group  Group
 }
 
+func DBCalcWinner(db *sql.DB, groupId int) (string, string, error) {
+	// calculate winner
+	scores, err := DBGetScores(db, groupId)
+	if err != nil {
+		return "", "", err
+	}
+	// find winner
+	var winner string
+	var second string
+	count := 0
+	var maxScore int
+	var maxWins int
+
+	for _, s := range scores {
+		if s.Points > maxScore {
+			maxScore = s.Points
+		}
+		if s.Wins > maxWins {
+			maxWins = s.Wins
+		}
+	}
+
+	// identify winner by wins
+	for p, s := range scores {
+		if s.Wins == maxWins {
+			count++
+			winner = p
+		}
+	}
+	// if there is no winner, identify by points
+	if count != 1 {
+		count = 0
+		for p, s := range scores {
+			if s.Points == maxScore {
+				count++
+				winner = p
+			}
+		}
+	}
+	// if there is still no winner, it's a tie
+	if count != 1 {
+		return "", "", fmt.Errorf(i18n[lang]["err-group-complete"] + i18n[lang]["perfect-draw-first"])
+	}
+
+	// identify second place
+	maxWins = 0
+	maxScore = 0
+	tie := false
+	for p, s := range scores {
+		if p != winner {
+			if s.Wins > maxWins {
+				maxWins = s.Wins
+				second = p
+				tie = false
+			} else if s.Wins == maxWins {
+				tie = true
+			}
+		}
+	}
+	if tie {
+		for p, s := range scores {
+			if p != winner {
+				if s.Points > maxScore {
+					maxScore = s.Points
+					second = p
+					tie = false
+				} else if s.Points == maxScore {
+					tie = true
+				}
+			}
+		}
+	}
+	if tie {
+		return "", "", fmt.Errorf(i18n[lang]["err-group-complete"] + i18n[lang]["perfect-draw-second"])
+	}
+	return winner, second, nil
+}
+
 func DBCheckGroupComplete(db *sql.DB, groupId int) ([]Advance, error) {
 	// check if the group is closed
 	var complete int
@@ -448,72 +526,10 @@ func DBCheckGroupComplete(db *sql.DB, groupId int) ([]Advance, error) {
 	if err != nil {
 		return nil, err
 	}
-	// calculate winner
-	scores, err := DBGetScores(db, groupId)
+
+	winner, second, err := DBCalcWinner(db, groupId)
 	if err != nil {
 		return nil, err
-	}
-	// find winner
-	var winner string
-	var second string
-	count := 0
-	var maxScore int
-	var maxWins int
-	for _, s := range scores {
-		if s.Points > maxScore {
-			maxScore = s.Points
-		}
-		if s.Wins > maxWins {
-			maxWins = s.Wins
-		}
-	}
-	for p, s := range scores {
-		if s.Wins == maxWins {
-			count++
-			winner = p
-		}
-	}
-	if count != 1 {
-		for p, s := range scores {
-			if s.Points == maxScore {
-				count++
-				winner = p
-			}
-		}
-	}
-	maxWins = 0
-	maxScore = 0
-	tie := false
-	for p, s := range scores {
-		if p != winner {
-			if s.Wins > maxWins {
-				maxWins = s.Wins
-				second = p
-				tie = false
-			} else if s.Wins == maxWins {
-				tie = true
-			}
-		}
-	}
-	if tie {
-		for p, s := range scores {
-			if p != winner {
-				if s.Points > maxScore {
-					maxScore = s.Points
-					second = p
-					tie = false
-				} else if s.Points == maxScore {
-					tie = true
-				}
-			}
-		}
-	}
-
-	if count == 0 {
-		return nil, fmt.Errorf(i18n[lang]["err-group-complete"] + "no winner found")
-	}
-	if count > 1 || tie {
-		return nil, fmt.Errorf(i18n[lang]["err-group-complete"] + i18n[lang]["perfect-draw"])
 	}
 
 	// advance player to next group

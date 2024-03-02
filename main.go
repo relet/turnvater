@@ -98,6 +98,11 @@ func main() {
 		fmt.Println("state not found in settings")
 		return
 	}
+	pRoleId, ok := settings["participantRoleId"]
+	if !ok {
+		fmt.Println("participantRoleId not found in settings")
+		return
+	}
 
 	db, err := sql.Open("sqlite", state)
 	if err != nil {
@@ -110,12 +115,12 @@ func main() {
 
 	participants := DBGetParticipants(backend, 0)
 
-	bot, err := NewBot(token, appId, guildId, participants)
-
+	bot, err := NewBot(token, appId, guildId, participants, pRoleId)
 	if err != nil {
 		fmt.Println("error running bot", err)
 		return
 	}
+	turnvater = &bot
 
 	bot.Run()
 }

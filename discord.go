@@ -7,11 +7,14 @@ import (
 )
 
 type TurnvaterBot struct {
-	Token        string
-	AppId        string
-	GuildId      string
-	Participants []string
-	Restart      bool
+	Token             string
+	AppId             string
+	GuildId           string
+	Participants      []string
+	ParticipantRoleId string
+	Restart           bool
+
+	Session *discordgo.Session
 }
 
 var commands = map[string]func(*discordgo.Session, *discordgo.InteractionCreate){
@@ -34,13 +37,14 @@ func GenChoices(choices []string) []*discordgo.ApplicationCommandOptionChoice {
 	return result
 }
 
-func NewBot(token string, appId string, guildId string, participants []string) (TurnvaterBot, error) {
+func NewBot(token string, appId string, guildId string, participants []string, participantRoleId string) (TurnvaterBot, error) {
 	bot := TurnvaterBot{
-		Token:        token,
-		AppId:        appId,
-		GuildId:      guildId,
-		Participants: participants,
-		Restart:      false,
+		Token:             token,
+		AppId:             appId,
+		GuildId:           guildId,
+		Participants:      participants,
+		ParticipantRoleId: participantRoleId,
+		Restart:           false,
 	}
 
 	err := bot.ReRegisterCommands()

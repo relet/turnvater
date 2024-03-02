@@ -46,6 +46,9 @@ func TurnRegisterHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) 
 		return
 	}
 
+	// add participant to participant role
+	dg.GuildMemberRoleAdd(i.GuildID, i.Member.User.ID, turnvater.ParticipantRoleId) // ignore errors
+
 	// Register a participant
 	Respond(dg, i, fmt.Sprintf(i18n[lang]["welcome"], i.Member.User.Username, ign))
 }
