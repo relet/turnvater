@@ -89,7 +89,12 @@ func TurnStatusHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
 		// show grouping info
 		groups := DBGetGroups(backend)
 		for _, g := range groups {
-			message += fmt.Sprintf("%s: %s\n", g.Name, strings.Join(g.Participants, ", "))
+			message += fmt.Sprintf("**%s:** %s\n", g.Name, strings.Join(g.Participants, ", "))
+			standing, err := DBCalcWinner(backend, g.Id)
+			if err == nil {
+				message += fmt.Sprintf(i18n[lang]["info-current-leaders"], standing.First, standing.Score1, i18n[lang][fmt.Sprintf("win-by-%d", standing.WinBy1)],
+					standing.Second, standing.Score2, i18n[lang][fmt.Sprintf("win-by-%d", standing.WinBy2)]) + "\n"
+			}
 			//print matches
 			matches := DBGetMatches(backend, g.Id)
 			for _, m := range matches {
@@ -169,7 +174,7 @@ func TurnResultHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
 	message := i18n[lang]["ok-set-score"] + " " + p1 + " vs " + p2 + ": " + fmt.Sprintf("%d-%d", score1, score2)
 
 	// check if this concludes the group
-	winners, err := DBCheckGroupComplete(backend, group.Id)
+	winners, _, err := DBCheckGroupComplete(backend, group.Id)
 	if err != nil {
 		Respond(dg, i, message+"\n\n"+i18n[lang]["err-group-complete"]+" "+err.Error())
 		return
@@ -221,5 +226,33 @@ func TurnGamesHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 	}
 	fmt.Println(message)
+	Respond(dg, i, message)
+}
+
+func TurnTableHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
+	// check if the tournament is running
+	status := DBGetTournamentStatus(backend)
+	if status != "status-started" {
+		Respond(dg, i, i18n[lang]["err-not-started"])
+		return
+	}
+	// display the table of a group
+	group := i.ApplicationCommandData().Options[0].StringValue()
+	g, err := DBGetGroupByName(backend, group)
+	if err != nil {
+		Respond(dg, i, i18n[lang]["err-get-games"]+" "+err.Error())
+		return
+	}
+	var message string
+	// get scores and present them as a table
+	scores, err := DBGetScores(backend, g)
+	if err != nil {
+		Respond(dg, i, i18n[lang]["err-get-games"]+" "+err.Error())
+		return
+	}
+	message = "*" + group + "*\n\n"
+	for p, s := range scores {
+		message += fmt.Sprintf(i18n[lang]["summary-score"], p, s.Wins, s.Points) + "\n"
+	}
 	Respond(dg, i, message)
 }

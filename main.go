@@ -114,8 +114,13 @@ func main() {
 	backend = db
 
 	participants := DBGetParticipants(backend, 0)
+	groups := DBGetGroups(backend)
+	groupNames := make([]string, len(groups))
+	for i, group := range groups {
+		groupNames[i] = group.Name
+	}
 
-	bot, err := NewBot(token, appId, guildId, participants, pRoleId)
+	bot, err := NewBot(token, appId, guildId, participants, pRoleId, groupNames)
 	if err != nil {
 		fmt.Println("error running bot", err)
 		return

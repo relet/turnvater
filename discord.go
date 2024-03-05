@@ -12,6 +12,7 @@ type TurnvaterBot struct {
 	GuildId           string
 	Participants      []string
 	ParticipantRoleId string
+	Groups            []string
 	Restart           bool
 
 	Session *discordgo.Session
@@ -24,6 +25,7 @@ var commands = map[string]func(*discordgo.Session, *discordgo.InteractionCreate)
 	"turn-start":    TurnStartHandler,
 	"turn-result":   TurnResultHandler,
 	"turn-games":    TurnGamesHandler,
+	"turn-table":    TurnTableHandler,
 }
 
 func GenChoices(choices []string) []*discordgo.ApplicationCommandOptionChoice {
@@ -37,7 +39,7 @@ func GenChoices(choices []string) []*discordgo.ApplicationCommandOptionChoice {
 	return result
 }
 
-func NewBot(token string, appId string, guildId string, participants []string, participantRoleId string) (TurnvaterBot, error) {
+func NewBot(token string, appId string, guildId string, participants []string, participantRoleId string, groups []string) (TurnvaterBot, error) {
 	bot := TurnvaterBot{
 		Token:             token,
 		AppId:             appId,
@@ -45,6 +47,7 @@ func NewBot(token string, appId string, guildId string, participants []string, p
 		Participants:      participants,
 		ParticipantRoleId: participantRoleId,
 		Restart:           false,
+		Groups:            groups,
 	}
 
 	err := bot.ReRegisterCommands()
@@ -204,6 +207,25 @@ func (bot *TurnvaterBot) ReRegisterCommands() error {
 		Name:         "turn-games",
 		Description:  i18n[lang]["turn-games"],
 		DMPermission: &allow,
+	})
+	if err != nil {
+		return fmt.Errorf("error creating command: %w", err)
+	}
+
+	// /turn-table
+	_, err = dg.ApplicationCommandCreate(bot.AppId, bot.GuildId, &discordgo.ApplicationCommand{
+		Name:         "turn-table",
+		Description:  i18n[lang]["turn-table"],
+		DMPermission: &allow,
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "group",
+				Description: "Group",
+				Required:    true,
+				Choices:     GenChoices(bot.Groups),
+			},
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("error creating command: %w", err)

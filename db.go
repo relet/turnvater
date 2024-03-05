@@ -385,109 +385,128 @@ type Advance struct {
 	Group  Group
 }
 
-func DBCalcWinner(db *sql.DB, groupId int) (string, string, error) {
+type WinBy int
+
+const WinByWins WinBy = 1
+const WinByPoints WinBy = 2
+
+type Standing struct {
+	First  string
+	Second string
+	WinBy1 WinBy
+	WinBy2 WinBy
+	Score1 int
+	Score2 int
+}
+
+func DBCalcWinner(db *sql.DB, groupId int) (Standing, error) {
 	// calculate winner
+	result := Standing{}
+
 	scores, err := DBGetScores(db, groupId)
 	if err != nil {
-		return "", "", err
+		return result, err
 	}
 	// find winner
-	var winner string
-	var second string
-	count := 0
 	var maxScore int
 	var maxWins int
+	tie := false
 
-	for _, s := range scores {
-		if s.Points > maxScore {
-			maxScore = s.Points
-		}
-		if s.Wins > maxWins {
-			maxWins = s.Wins
-		}
-	}
-
-	// identify winner by wins
 	for p, s := range scores {
-		if s.Wins == maxWins {
-			count++
-			winner = p
+		if s.Wins > maxWins {
+			tie = false
+			maxWins = s.Wins
+			result.First = p
+		} else if s.Wins == maxWins {
+			tie = true
 		}
 	}
+	result.WinBy1 = WinByWins
+	result.Score1 = maxWins
 
 	// if there is no winner, identify by points
-	if count != 1 {
-		count = 0
+	if tie {
 		for p, s := range scores {
-			if s.Points == maxScore {
-				count++
-				winner = p
+			if s.Wins == maxWins && s.Points > maxScore {
+				tie = false
+				maxScore = s.Points
+				result.First = p
+			} else if s.Wins == maxWins && s.Points == maxScore {
+				tie = true
 			}
 		}
+		result.WinBy1 = WinByPoints
+		result.Score1 = maxScore
 	}
-	// if there is still no winner, it's a tie
-	if count != 1 {
-		return "", "", fmt.Errorf(i18n[lang]["err-group-complete"] + i18n[lang]["perfect-draw-first"])
+
+	if tie {
+		return result, fmt.Errorf(i18n[lang]["err-group-complete"] + i18n[lang]["perfect-draw-first"])
 	}
 
 	// identify second place
 	maxWins = 0
 	maxScore = 0
-	tie := false
+	tie = false
+
 	for p, s := range scores {
-		if p != winner {
+		if p != result.First {
 			if s.Wins > maxWins {
 				maxWins = s.Wins
-				second = p
+				result.Second = p
 				tie = false
 			} else if s.Wins == maxWins {
 				tie = true
 			}
 		}
 	}
+	result.WinBy2 = WinByWins
+	result.Score2 = maxWins
+
 	if tie {
 		for p, s := range scores {
-			if p != winner {
-				if s.Points > maxScore {
+			if p != result.First {
+				if s.Wins == maxWins && s.Points > maxScore {
 					maxScore = s.Points
-					second = p
+					result.Second = p
 					tie = false
-				} else if s.Points == maxScore {
+				} else if s.Wins == maxWins && s.Points == maxScore {
 					tie = true
 				}
 			}
 		}
+		result.WinBy2 = WinByPoints
+		result.Score2 = maxScore
 	}
 	if tie {
-		return "", "", fmt.Errorf(i18n[lang]["err-group-complete"] + i18n[lang]["perfect-draw-second"])
+		return result, fmt.Errorf(i18n[lang]["err-group-complete"] + i18n[lang]["perfect-draw-second"])
 	}
-	return winner, second, nil
+	return result, nil
 }
 
-func DBCheckGroupComplete(db *sql.DB, groupId int) ([]Advance, error) {
+func DBCheckGroupComplete(db *sql.DB, groupId int) ([]Advance, *Standing, error) {
 	// check if the group is closed
 	var complete int
 	err := db.QueryRow("SELECT complete FROM groups WHERE id = ?", groupId).Scan(&complete)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if complete == 1 {
-		return nil, nil
+		return nil, nil, nil
 	}
 	// list open matches
 	var openMatches int
 	err = db.QueryRow("SELECT count(*) FROM matches WHERE group_id = ? AND score1 = 0 AND score2 = 0", groupId).Scan(&openMatches)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if openMatches > 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 	// read participant count
 	var participantCount int
 	err = db.QueryRow("SELECT count(*) FROM participants WHERE group_id = ?", groupId).Scan(&participantCount)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// group is complete, identify the successor(s)
@@ -495,7 +514,7 @@ func DBCheckGroupComplete(db *sql.DB, groupId int) ([]Advance, error) {
 	var nextGroupB Group
 	rows, err := db.Query("SELECT m.group_id, g.name FROM matches m LEFT JOIN groups g ON m.group_id = g.id WHERE player1 = ? OR player2 = ?", fmt.Sprintf("!G%d", groupId), fmt.Sprintf("!G%d", groupId))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer rows.Close()
 	// if no rows returned
@@ -505,7 +524,7 @@ func DBCheckGroupComplete(db *sql.DB, groupId int) ([]Advance, error) {
 	} else {
 		err = rows.Scan(&nextGroupA.Id, &nextGroupA.Name)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	rows.Close()
@@ -513,15 +532,15 @@ func DBCheckGroupComplete(db *sql.DB, groupId int) ([]Advance, error) {
 	if participantCount > 3 {
 		rows, err = db.Query("SELECT m.group_id, g.name FROM matches m LEFT JOIN groups g ON m.group_id = g.id WHERE player1 = ? OR player2 = ?", fmt.Sprintf("!G%d.2", groupId), fmt.Sprintf("!G%d.2", groupId))
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		defer rows.Close()
 		if !rows.Next() {
-			return nil, fmt.Errorf(i18n[lang]["err-group-complete"] + "no second group found")
+			return nil, nil, fmt.Errorf(i18n[lang]["err-group-complete"] + "no second group found")
 		}
 		err = rows.Scan(&nextGroupB.Id, &nextGroupB.Name)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		rows.Close()
 	}
@@ -529,50 +548,49 @@ func DBCheckGroupComplete(db *sql.DB, groupId int) ([]Advance, error) {
 	// mark group as complete
 	_, err = db.Exec("UPDATE groups SET complete = 1 WHERE id = ?", groupId)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	winner, second, err := DBCalcWinner(db, groupId)
-	fmt.Println("winner", winner, "second", second, "...")
+	standing, err := DBCalcWinner(db, groupId)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// advance player to next group
-	_, err = db.Exec("UPDATE participants SET group_id = ? WHERE ign = ?", nextGroupA.Id, winner)
+	_, err = db.Exec("UPDATE participants SET group_id = ? WHERE ign = ?", nextGroupA.Id, standing.First)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if nextGroupB.Id > 0 {
-		_, err = db.Exec("UPDATE participants SET group_id = ? WHERE ign = ?", nextGroupB.Id, second)
+		_, err = db.Exec("UPDATE participants SET group_id = ? WHERE ign = ?", nextGroupB.Id, standing.Second)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	// update player id in match
-	_, err = db.Exec("UPDATE matches SET player1 = ? WHERE player1 = ?", winner, fmt.Sprintf("!G%d", groupId))
+	_, err = db.Exec("UPDATE matches SET player1 = ? WHERE player1 = ?", standing.First, fmt.Sprintf("!G%d", groupId))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	_, err = db.Exec("UPDATE matches SET player2 = ? WHERE player2 = ?", winner, fmt.Sprintf("!G%d", groupId))
+	_, err = db.Exec("UPDATE matches SET player2 = ? WHERE player2 = ?", standing.First, fmt.Sprintf("!G%d", groupId))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if nextGroupB.Id > 0 {
-		_, err = db.Exec("UPDATE matches SET player1 = ? WHERE player1 = ?", second, fmt.Sprintf("!G%d.2", groupId))
+		_, err = db.Exec("UPDATE matches SET player1 = ? WHERE player1 = ?", standing.Second, fmt.Sprintf("!G%d.2", groupId))
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		_, err = db.Exec("UPDATE matches SET player2 = ? WHERE player2 = ?", second, fmt.Sprintf("!G%d.2", groupId))
+		_, err = db.Exec("UPDATE matches SET player2 = ? WHERE player2 = ?", standing.Second, fmt.Sprintf("!G%d.2", groupId))
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
-	winners := []Advance{{Player: winner, Group: nextGroupA}}
+	winners := []Advance{{Player: standing.First, Group: nextGroupA}}
 	if nextGroupB.Id > 0 {
-		winners = append(winners, Advance{Player: second, Group: nextGroupB})
+		winners = append(winners, Advance{Player: standing.Second, Group: nextGroupB})
 	}
-	return winners, nil
+	return winners, &standing, nil
 }
 
 func DBCloseTournament(db *sql.DB, winner string) error {
@@ -597,4 +615,13 @@ func DBGetTournamentWinner(db *sql.DB) string {
 
 func DBGetTournamentStatus(db *sql.DB) string {
 	return DBGetOption(db, "status")
+}
+
+func DBGetGroupByName(db *sql.DB, name string) (int, error) {
+	var id int
+	err := db.QueryRow("SELECT id FROM groups WHERE name = ?", name).Scan(&id)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
 }

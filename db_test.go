@@ -61,7 +61,7 @@ func TestTournament(t *testing.T) {
 	}
 
 	// check if group 1 is complete
-	advance, err := DBCheckGroupComplete(db, 1)
+	advance, _, err := DBCheckGroupComplete(db, 1)
 	if err != nil {
 		t.Errorf("Error checking group 1: %s", err)
 	}
@@ -81,7 +81,7 @@ func TestTournament(t *testing.T) {
 	}
 
 	// check if group 1 is complete
-	advance, err = DBCheckGroupComplete(db, 1)
+	advance, _, err = DBCheckGroupComplete(db, 1)
 	if err != nil {
 		t.Errorf("Error checking group 1: %s", err)
 	}
@@ -91,7 +91,7 @@ func TestTournament(t *testing.T) {
 
 	// complete the remaining groups
 	for _, group := range groups {
-		advance, err = DBCheckGroupComplete(db, group.Id)
+		advance, _, err = DBCheckGroupComplete(db, group.Id)
 		if err != nil {
 			t.Errorf("Error checking group %d: %s", group.Id, err)
 		}
@@ -132,7 +132,7 @@ func TestTournament(t *testing.T) {
 					}
 				}
 			}
-			_, err = DBCheckGroupComplete(db, group.Id)
+			_, _, err = DBCheckGroupComplete(db, group.Id)
 			if err != nil {
 				t.Errorf("Error checking group %d: %s", group.Id, err)
 			}
@@ -155,7 +155,7 @@ func TestTournament(t *testing.T) {
 	}
 
 	DBCreateMatch(db, groups[0].Participants[0], groups[0].Participants[1], 3, 2)
-	advance, _ = DBCheckGroupComplete(db, groups[0].Id)
+	advance, _, _ = DBCheckGroupComplete(db, groups[0].Id)
 
 	if len(advance) != 1 {
 		t.Errorf("Expected 1 winner, got %d", len(advance))
