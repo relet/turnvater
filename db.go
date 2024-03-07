@@ -342,6 +342,7 @@ func DBGetMatches(db *sql.DB, groupId int) []Match {
 type Score struct {
 	Wins   int
 	Points int
+	Diff   int
 }
 
 func DBGetScores(db *sql.DB, groupId int) (map[string]Score, error) {
@@ -366,14 +367,14 @@ func DBGetScores(db *sql.DB, groupId int) (map[string]Score, error) {
 			scores[p2] = Score{}
 		}
 		if s1 > s2 {
-			scores[p1] = Score{Wins: scores[p1].Wins + 1, Points: scores[p1].Points + s1}
-			scores[p2] = Score{Wins: scores[p2].Wins, Points: scores[p2].Points + s2}
+			scores[p1] = Score{Wins: scores[p1].Wins + 1, Points: scores[p1].Points + s1, Diff: scores[p1].Diff + s1 - s2}
+			scores[p2] = Score{Wins: scores[p2].Wins, Points: scores[p2].Points + s2, Diff: scores[p2].Diff + s2 - s1}
 		} else if s2 > s1 {
-			scores[p1] = Score{Wins: scores[p1].Wins, Points: scores[p1].Points + s1}
-			scores[p2] = Score{Wins: scores[p2].Wins + 1, Points: scores[p2].Points + s2}
+			scores[p1] = Score{Wins: scores[p1].Wins, Points: scores[p1].Points + s1, Diff: scores[p1].Diff + s1 - s2}
+			scores[p2] = Score{Wins: scores[p2].Wins + 1, Points: scores[p2].Points + s2, Diff: scores[p2].Diff + s2 - s1}
 		} else {
-			scores[p1] = Score{Wins: scores[p1].Wins, Points: scores[p1].Points + s1}
-			scores[p2] = Score{Wins: scores[p2].Wins, Points: scores[p2].Points + s2}
+			scores[p1] = Score{Wins: scores[p1].Wins, Points: scores[p1].Points + s1, Diff: scores[p1].Diff}
+			scores[p2] = Score{Wins: scores[p2].Wins, Points: scores[p2].Points + s2, Diff: scores[p2].Diff}
 
 		}
 	}
@@ -389,6 +390,7 @@ type WinBy int
 
 const WinByWins WinBy = 1
 const WinByPoints WinBy = 2
+const WinByDiff WinBy = 3
 
 type Standing struct {
 	First  string
@@ -412,6 +414,7 @@ func DBCalcWinner(db *sql.DB, groupId int) (Standing, error) {
 	var maxWins int
 	tie := false
 
+	// TODO: generalize this
 	for p, s := range scores {
 		if s.Wins > maxWins {
 			tie = false
@@ -424,7 +427,23 @@ func DBCalcWinner(db *sql.DB, groupId int) (Standing, error) {
 	result.WinBy1 = WinByWins
 	result.Score1 = maxWins
 
+	// if there is no winner, identify by diff
+	if tie {
+		for p, s := range scores {
+			if s.Wins == maxWins && s.Diff > maxScore {
+				tie = false
+				maxScore = s.Diff
+				result.First = p
+			} else if s.Wins == maxWins && s.Diff == maxScore {
+				tie = true
+			}
+		}
+		result.WinBy1 = WinByDiff
+		result.Score1 = maxScore
+	}
+
 	// if there is no winner, identify by points
+	/* disabled by popular vote
 	if tie {
 		for p, s := range scores {
 			if s.Wins == maxWins && s.Points > maxScore {
@@ -437,7 +456,7 @@ func DBCalcWinner(db *sql.DB, groupId int) (Standing, error) {
 		}
 		result.WinBy1 = WinByPoints
 		result.Score1 = maxScore
-	}
+	} */
 
 	if tie {
 		return result, fmt.Errorf(i18n[lang]["err-group-complete"] + i18n[lang]["perfect-draw-first"])
@@ -465,6 +484,23 @@ func DBCalcWinner(db *sql.DB, groupId int) (Standing, error) {
 	if tie {
 		for p, s := range scores {
 			if p != result.First {
+				if s.Wins == maxWins && s.Diff > maxScore {
+					maxScore = s.Diff
+					result.Second = p
+					tie = false
+				} else if s.Wins == maxWins && s.Diff == maxScore {
+					tie = true
+				}
+			}
+		}
+		result.WinBy2 = WinByDiff
+		result.Score2 = maxScore
+	}
+
+	/* disabled by popular vote
+	if tie {
+		for p, s := range scores {
+			if p != result.First {
 				if s.Wins == maxWins && s.Points > maxScore {
 					maxScore = s.Points
 					result.Second = p
@@ -477,6 +513,7 @@ func DBCalcWinner(db *sql.DB, groupId int) (Standing, error) {
 		result.WinBy2 = WinByPoints
 		result.Score2 = maxScore
 	}
+	*/
 	if tie {
 		return result, fmt.Errorf(i18n[lang]["err-group-complete"] + i18n[lang]["perfect-draw-second"])
 	}

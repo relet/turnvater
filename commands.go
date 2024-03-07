@@ -252,7 +252,7 @@ func TurnTableHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	message = "*" + group + "*\n\n"
 	for p, s := range scores {
-		message += fmt.Sprintf(i18n[lang]["summary-score"], p, s.Wins, s.Points) + "\n"
+		message += fmt.Sprintf(i18n[lang]["summary-score"], p, s.Wins, s.Diff, s.Points) + "\n"
 	}
 	Respond(dg, i, message)
 }

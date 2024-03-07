@@ -56,9 +56,10 @@ var i18n = map[string]map[string]string{
 		"summary-group":        "%s:",
 		"summary-match":        "    %s: %d - %d: %s",
 		"summary-games":        "Alle Spiele in offenen Gruppen:",
-		"summary-score":        "%s: %d Siege, %d Punkte",
+		"summary-score":        "%s: %d Siege, %d Punktdifferenz, %d Punkte",
 		"win-by-1":             "Siege",
 		"win-by-2":             "Punkte",
+		"win-by-3":             "Punktdifferenz",
 	},
 	"en": {
 		"turn-reset":           "Reset tournament",
@@ -115,8 +116,9 @@ var i18n = map[string]map[string]string{
 		"summary-group":        "%s:",
 		"summary-match":        "    %s: %d - %d: %s",
 		"summary-games":        "All games in open groups:",
-		"summary-score":        "%s: %d wins, %d points",
+		"summary-score":        "%s: %d wins, %d score difference, %d points",
 		"win-by-1":             "wins",
 		"win-by-2":             "points",
+		"win-by-3":             "score difference",
 	},
 }
