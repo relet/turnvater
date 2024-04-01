@@ -19,13 +19,14 @@ type TurnvaterBot struct {
 }
 
 var commands = map[string]func(*discordgo.Session, *discordgo.InteractionCreate){
-	"turn-reset":    TurnResetHandler,
-	"turn-register": TurnRegisterHandler,
-	"turn-status":   TurnStatusHandler,
-	"turn-start":    TurnStartHandler,
-	"turn-result":   TurnResultHandler,
-	"turn-games":    TurnGamesHandler,
-	"turn-table":    TurnTableHandler,
+	"turn-reset":       TurnResetHandler,
+	"turn-register":    TurnRegisterHandler,
+	"turn-status":      TurnStatusHandler,
+	"turn-start":       TurnStartHandler,
+	"turn-result":      TurnResultHandler,
+	"turn-games":       TurnGamesHandler,
+	"turn-table":       TurnTableHandler,
+	"turn-close-group": TurnCloseGroupHandler,
 }
 
 func GenChoices(choices []string) []*discordgo.ApplicationCommandOptionChoice {
@@ -217,6 +218,26 @@ func (bot *TurnvaterBot) ReRegisterCommands() error {
 		Name:         "turn-table",
 		Description:  i18n[lang]["turn-table"],
 		DMPermission: &allow,
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "group",
+				Description: "Group",
+				Required:    true,
+				Choices:     GenChoices(bot.Groups),
+			},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("error creating command: %w", err)
+	}
+
+	// /turn-close-group
+	_, err = dg.ApplicationCommandCreate(bot.AppId, bot.GuildId, &discordgo.ApplicationCommand{
+		Name:                     "turn-close-group",
+		Description:              i18n[lang]["turn-close-group"],
+		DefaultMemberPermissions: &permAdmin,
+		DMPermission:             &allow,
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionString,

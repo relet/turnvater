@@ -154,7 +154,7 @@ func TurnResultHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	group, bestof := DBGetGroupAndBestOf(backend, p1, p2)
-	if group.Id == 0 {
+	if group.Name == "" {
 		Respond(dg, i, i18n[lang]["err-no-match"])
 		return
 	}
@@ -253,6 +253,43 @@ func TurnTableHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
 	message = "*" + group + "*\n\n"
 	for p, s := range scores {
 		message += fmt.Sprintf(i18n[lang]["summary-score"], p, s.Wins, s.Diff, s.Points) + "\n"
+	}
+	Respond(dg, i, message)
+}
+
+func TurnCloseGroupHandler(dg *discordgo.Session, i *discordgo.InteractionCreate) {
+	// Check if the user has the correct permissions
+	if !HasPermission(dg, i.Member, i.GuildID, "ADMINISTRATOR") {
+		Respond(dg, i, i18n[lang]["err-not-allowed"])
+		return
+	}
+	// Close a group
+	group := i.ApplicationCommandData().Options[0].StringValue()
+	g, err := DBGetGroupByName(backend, group)
+	if err != nil {
+		Respond(dg, i, i18n[lang]["err-get-games"]+" "+err.Error())
+		return
+	}
+	winners, _, err := DBDoGroupComplete(backend, g)
+	if err != nil {
+		Respond(dg, i, i18n[lang]["err-close-group"]+" "+err.Error())
+		return
+	}
+	message := fmt.Sprintf(i18n[lang]["ok-close-group"], group)
+	if winners != nil {
+		// check if the tournament has been won
+		first := winners[0]
+		if first.Group.Id == 0 {
+			DBCloseTournament(backend, first.Player)
+			message += "\n\n" + fmt.Sprintf(i18n[lang]["congratulate"], first.Player)
+		} else {
+			// send a new message informing about the promotion
+			message += "\n\n" + fmt.Sprintf(i18n[lang]["ok-group-winner"], first.Player, group, first.Group.Name)
+			if len(winners) > 1 {
+				second := winners[1]
+				message += "\n" + fmt.Sprintf(i18n[lang]["ok-group-second"], second.Player, group, second.Group.Name)
+			}
+		}
 	}
 	Respond(dg, i, message)
 }

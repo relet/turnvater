@@ -34,12 +34,12 @@ func TestTournament(t *testing.T) {
 		t.Errorf("Expected tournament name %s, got %s", randName, name)
 	}
 
-	//register 17 participants
+	//register 21 participants
 	for i := 0; i < 21; i++ {
 		DBRegisterParticipant(db, fmt.Sprintf("user%d", i), fmt.Sprintf("ign%d", i))
 	}
 
-	// check if 17 participants are registered
+	// check if 21 participants are registered
 	participants := DBGetParticipants(db, 0)
 	if len(participants) != 21 {
 		t.Errorf("Expected 21 participants, got %d", len(participants))
@@ -119,16 +119,21 @@ func TestTournament(t *testing.T) {
 	}
 
 	//complete the process for the remaining groups
-	for {
+	count := 0
+	fistScore := 4
+	secondScore := 2
+	for count < 20 {
 		groups = DBGetGroups(db)
 		if len(groups) == 1 {
 			break
 		}
 		for _, group := range groups {
+			score := fistScore
 			for _, p1 := range group.Participants {
 				for _, p2 := range group.Participants {
 					if p1 != p2 {
-						DBCreateMatch(db, p1, p2, 3, 2)
+						DBCreateMatch(db, p1, p2, int64(score), 0)
+						score = secondScore
 					}
 				}
 			}
@@ -137,6 +142,10 @@ func TestTournament(t *testing.T) {
 				t.Errorf("Error checking group %d: %s", group.Id, err)
 			}
 		}
+		count++
+	}
+	if count >= 9 {
+		t.Errorf("Expected loop to finish, but it didn't")
 	}
 
 	// check if the tournament is finished
@@ -181,4 +190,67 @@ func TestTournament(t *testing.T) {
 	//finally, close and delete the database file
 	db.Close()
 	os.Remove("testing.sqlite3")
+}
+
+func TestGroupSize2(t *testing.T) {
+	db := InitDB()
+	defer db.Close()
+
+	if db == nil {
+		t.Errorf("Error opening database")
+	}
+	// reset the tournament with a random id
+	randName := fmt.Sprintf("test-%d", rand.Intn(1000))
+	DBResetTournament(db, randName)
+
+	name := DBGetTournamentName(db)
+	if name != randName {
+		t.Errorf("Expected tournament name %s, got %s", randName, name)
+	}
+
+	//register 8 participants
+	for i := 0; i < 8; i++ {
+		DBRegisterParticipant(db, fmt.Sprintf("user%d", i), fmt.Sprintf("ign%d", i))
+	}
+
+	// check if 8 participants are registered
+	participants := DBGetParticipants(db, 0)
+	if len(participants) != 8 {
+		t.Errorf("Expected 8 participants, got %d", len(participants))
+	}
+
+	// start the tournament with group size 2
+	DBStartTournament(db, 2, 3, 5)
+
+	// check if the tournament is started
+	status := DBGetTournamentStatus(db)
+	if status != "status-started" {
+		t.Errorf("Expected status-started, got %s", status)
+	}
+
+	// check if the tournament has 4 active groups, this tests group count reduction to 2^x
+	groups := DBGetGroups(db)
+	if len(groups) != 4 {
+		t.Errorf("Expected 4 groups, got %d", len(groups))
+	}
+
+	group, bestof := DBGetGroupAndBestOf(db, groups[0].Participants[0], groups[0].Participants[1])
+	if group.Id == 0 {
+		t.Errorf("Expected group 1 to be created")
+	}
+	if bestof != 3 {
+		t.Errorf("Expected best of 3, got %d", bestof)
+	}
+
+	// generate a match for first group
+	DBCreateMatch(db, groups[0].Participants[0], groups[0].Participants[1], 3, 2)
+
+	// check if group 1 is complete, this seems to currently throw an error trying to advance the second player
+	advance, _, err := DBCheckGroupComplete(db, 1)
+	if err != nil {
+		t.Errorf("Error checking group 1: %s", err)
+	}
+	if advance == nil {
+		t.Errorf("Expected group 1 to be complete")
+	}
 }

@@ -462,7 +462,11 @@ func DBCalcWinner(db *sql.DB, groupId int) (Standing, error) {
 		return result, fmt.Errorf(i18n[lang]["err-group-complete"] + i18n[lang]["perfect-draw-first"])
 	}
 
-	// identify second place
+	// identify second place, but only if the group size is > 2
+	if len(scores) < 3 {
+		return result, nil
+	}
+
 	maxWins = 0
 	maxScore = 0
 	tie = false
@@ -539,14 +543,11 @@ func DBCheckGroupComplete(db *sql.DB, groupId int) ([]Advance, *Standing, error)
 	if openMatches > 0 {
 		return nil, nil, nil
 	}
-	// read participant count
-	var participantCount int
-	err = db.QueryRow("SELECT count(*) FROM participants WHERE group_id = ?", groupId).Scan(&participantCount)
-	if err != nil {
-		return nil, nil, err
-	}
+	return DBDoGroupComplete(db, groupId)
+}
 
-	// group is complete, identify the successor(s)
+func DBDoGroupComplete(db *sql.DB, groupId int) ([]Advance, *Standing, error) {
+	// group is complete or being closed, identify the successor(s)
 	var nextGroupA Group
 	var nextGroupB Group
 	rows, err := db.Query("SELECT m.group_id, g.name FROM matches m LEFT JOIN groups g ON m.group_id = g.id WHERE player1 = ? OR player2 = ?", fmt.Sprintf("!G%d", groupId), fmt.Sprintf("!G%d", groupId))
@@ -566,6 +567,13 @@ func DBCheckGroupComplete(db *sql.DB, groupId int) ([]Advance, *Standing, error)
 	}
 	rows.Close()
 
+	// read participant count
+	var participantCount int
+	err = db.QueryRow("SELECT count(*) FROM participants WHERE group_id = ?", groupId).Scan(&participantCount)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	if participantCount > 3 {
 		rows, err = db.Query("SELECT m.group_id, g.name FROM matches m LEFT JOIN groups g ON m.group_id = g.id WHERE player1 = ? OR player2 = ?", fmt.Sprintf("!G%d.2", groupId), fmt.Sprintf("!G%d.2", groupId))
 		if err != nil {
@@ -582,13 +590,13 @@ func DBCheckGroupComplete(db *sql.DB, groupId int) ([]Advance, *Standing, error)
 		rows.Close()
 	}
 
-	// mark group as complete
-	_, err = db.Exec("UPDATE groups SET complete = 1 WHERE id = ?", groupId)
+	standing, err := DBCalcWinner(db, groupId)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	standing, err := DBCalcWinner(db, groupId)
+	// mark group as complete, will have failed if there is no winner in the previous step
+	_, err = db.Exec("UPDATE groups SET complete = 1 WHERE id = ?", groupId)
 	if err != nil {
 		return nil, nil, err
 	}
