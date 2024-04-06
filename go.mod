@@ -3,7 +3,11 @@ module github.com/relet/turnvater
 go 1.21.4
 
 require (
-	github.com/bwmarrin/discordgo v0.27.1 // indirect
+	github.com/bwmarrin/discordgo v0.27.1
+	modernc.org/sqlite v1.29.2
+)
+
+require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
@@ -18,7 +22,6 @@ require (
 	modernc.org/libc v1.41.0 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.7.2 // indirect
-	modernc.org/sqlite v1.29.2 // indirect
 	modernc.org/strutil v1.2.0 // indirect
 	modernc.org/token v1.1.0 // indirect
 )

@@ -28,7 +28,6 @@ func DBResetTournament(db *sql.DB, name string) error {
 		value TEXT NOT NULL
 	)`)
 	if err != nil {
-		fmt.Println("error creating options table:", err)
 		return err
 	}
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS participants (
@@ -427,6 +426,8 @@ func DBCalcWinner(db *sql.DB, groupId int) (Standing, error) {
 	result.WinBy1 = WinByWins
 	result.Score1 = maxWins
 
+	maxScore = -1000
+
 	// if there is no winner, identify by diff
 	if tie {
 		for p, s := range scores {
@@ -484,6 +485,8 @@ func DBCalcWinner(db *sql.DB, groupId int) (Standing, error) {
 	}
 	result.WinBy2 = WinByWins
 	result.Score2 = maxWins
+
+	maxScore = -1000
 
 	if tie {
 		for p, s := range scores {
