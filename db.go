@@ -301,7 +301,7 @@ func DBGetAllGames(db *sql.DB) ([]Group, error) {
 func DBGetGroupAndBestOf(db *sql.DB, p1, p2 string) (Group, int) {
 	var groupId, bestof int
 	var groupName string
-	err := db.QueryRow("SELECT g.id, g.name, m.bestof FROM matches m LEFT JOIN groups g ON m.group_id = g.id WHERE g.complete = 0 AND (m.player1 = ? AND m.player2 = ?) OR (m.player1 = ? AND m.player2 = ?)", p1, p2, p2, p1).Scan(&groupId, &groupName, &bestof)
+	err := db.QueryRow("SELECT g.id, g.name, m.bestof FROM matches m LEFT JOIN groups g ON m.group_id = g.id WHERE g.complete = 0 AND ((m.player1 = ? AND m.player2 = ?) OR (m.player1 = ? AND m.player2 = ?))", p1, p2, p2, p1).Scan(&groupId, &groupName, &bestof)
 	if err != nil {
 		return Group{}, 0
 	}
